@@ -2,7 +2,7 @@ import csv
 import sys
 
 orig_stdout = sys.stdout
-f = open('out.pl', 'w')
+f = open('paragem.pl', 'w')
 sys.stdout = f
 
 with open('paragens.csv') as csv_file:

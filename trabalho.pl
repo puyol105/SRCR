@@ -30,9 +30,8 @@
 %--------------------------------- - - - - - - - - - -  -  -  -  -   -
 % Meta predicados.
 
-:- dynamic paragem/11. % Id, x,y, Estado( Bom/Razoavel/Mau ), Tipo , Publicidade, Operadora, Carreira, Cod_Rua, Nome_Rua, Freguesia
+:- dynamic paragem/11. % Id, X, Y, Estado, Tipo, Publicidade, Operadora, [Carreira], Cod_Rua, Nome_Rua, [Freguesia]
 :- dynamic carreira/2. % Id, [Id_Paragens]
-
 
 %--------------------------------- - - - - - - - - - -  -  -  -  -   -
 % Base de conhecimento
@@ -41,127 +40,42 @@
 :-include(paragem). 
 
 %--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado insere: Termo -> {V,F}
+% Responder a Querys
 
-insere(P) :- assert(P).
-insere(P) :- retract(P), !, fail.
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado remove: Termo -> {V,F}
-
-remove(P) :- retract(P).
-remove(P) :- assert(P), !, fail.
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado testa: Lista -> {V,F}
-
-testa([]).
-testa([X|R]) :- X, testa(R).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado solucoes: Termo, Questão, Resultado -> {V,F}
-
-solucoes(X,Y,Z) :- findall(X,Y,Z).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado solucoesSRep: Termo, Questão, Resultado -> {V,F}
-
-solucoesSRep(X,Y,Z) :- setof(X,Y,Z). 
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado evolucao: Termo -> {V,F}
-
-evolucao(T) :-
-	solucoes(I, +T :: I, S),
-	insere(T),
-	testa(S).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado involucao: Termo -> {V,F}
-
-involucao(T) :-
-	solucoes(I, -T :: I, S),
-	remove(T),
-	testa(S).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão do predicado comprimento: Lista, Resultado -> {V,F}
-
-comprimento(S,N) :- length(S,N).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensao do meta-predicado demo: Questao,Resposta -> {V,F}
-
-demo( Questao,verdadeiro ) :-
-    Questao.
-demo( Questao,falso ) :-
-    -Questao.
-demo( Questao,desconhecido ) :-
-    nao( Questao ),
-    nao( -Questao ).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensao do meta-predicado demoComp: CompQuestao,Resposta -> {V,D,F}
-
-demoComp(Q1 e Q2, R) :-
-	demo(Q1,R1),
-	demoComp(Q2,R2),
-	conjuncao(R1,R2,R).
-demoComp(Q1 ou Q2, R) :-
-	demo(Q1,R1),
-	demoComp(Q2,R2),
-	disjuncao(R1,R2,R).
-demoComp(Q, R) :-
-	demo(Q,R).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensao do predicado conjuncao: Resposta1, Resposta2, Resposta -> {V,D,F}
-
-conjuncao(verdadeiro,verdadeiro,verdadeiro).
-conjuncao(verdadeiro,falso,falso).
-conjuncao(falso,verdadeiro,falso).
-conjuncao(falso,falso,falso).
-conjuncao(desconhecido,desconhecido,desconhecido).
-conjuncao(desconhecido,verdadeiro,desconhecido).
-conjuncao(verdadeiro,desconhecido,desconhecido).
-conjuncao(desconhecido,falso,falso).
-conjuncao(falso,desconhecido,falso).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensao do predicado disjuncao: Resposta1, Resposta2, Resposta -> {V,D,F}
-
-disjuncao(verdadeiro,verdadeiro,verdadeiro).
-disjuncao(verdadeiro,falso,verdadeiro).
-disjuncao(falso,verdadeiro,verdadeiro).
-disjuncao(falso,falso,falso).
-disjuncao(desconhecido,desconhecido,desconhecido).
-disjuncao(desconhecido,verdadeiro,verdadeiro).
-disjuncao(verdadeiro,desconhecido,verdadeiro).
-disjuncao(desconhecido,falso,desconhecido).
-disjuncao(falso,desconhecido,desconhecido).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensao do meta-predicado nao: Questao -> {V,F}
-
-nao( Questao ) :-
-    Questao, !, fail.
-nao( Questao ).
-
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-%Extensão do predicado Coordenada: #Id, X, Y -> {V,F,D}
-
-%coordenada(1, -99888.8, -105966.88).
-
-%coordenada([...]).
+% Auxiliares
+hacarreira(X) :- carreiras(L), member(X,L).
 
 
-%--------------------------------- - - - - - - - - - -  -  -  -  -   -
-% Extensão da negação forte do predicado coordenada
 
-%-coordenada(Id,X,Y) :- 
-%    nao(coordenada(Id,X,Y)), 
-%    nao(excecao(coordenada(Id,X,Y)).
+% 1 - Calcular um trajeto entre dois pontos;
 
-%importCSV :- csv_read_file('paragenscsv.csv', Data), 
-%             print(Data).
+hatrajeto(A,B) :- carreiras(L),
+				  foreach(L).
 
+
+hatrajetoaux(A,B,X) :- hacarreira(X),
+					   existe(A,X),
+					   existe(B,X).
+
+
+
+
+existe(A,X) :- carreira(X,L), member(A,L).
+
+
+
+% 2 - Selecionar apenas algumas das operadoras de transporte para um determinado percurso;
+
+% 3 - Excluir um ou mais operadores de transporte para o percurso;
+
+% 4 - Identificar quais as paragens com o maior número de carreiras num determinado percurso.
+
+% 5 - Escolher o menor percurso (usando critério menor número de paragens);
+
+% 6 - Escolher o percurso mais rápido (usando critério da distância);
+
+% 7 - Escolher o percurso que passe apenas por abrigos com publicidade;
+
+% 8 - Escolher o percurso que passe apenas por paragens abrigadas;
+
+% 9 - Escolher um ou mais pontos intermédios por onde o percurso deverá passar;
